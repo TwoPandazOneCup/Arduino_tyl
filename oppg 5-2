@@ -1,0 +1,92 @@
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+const int TEMP_PIN = A0;
+const int UP_PIN = 9;
+const int DOWN_PIN = 8;
+const int LED_PIN = 13;
+
+float TEMP_THRESHOLD = 20.0;
+const float TEMP_STEP = 0.5;
+
+const int BUTONN_TIMEOUT = 500;
+unsigned long BUTTON_TIMER = 0;
+
+void setup()
+{
+	lcd.begin(16,2);
+	lcd.clear();
+	Serial.begin(9600);
+
+	pinMode(UP_PIN, INPUT);
+	pinMode(DOWN_PIN, INPUT);
+	pinMode(LED_PIN, OUTPUT);
+}
+
+void loop()
+{
+	delay(20);
+
+	handle_button();
+	
+	draw_screen();
+	
+	handle_temp_led();
+
+}
+void handle_temp_led()
+{
+	if(get_deg_c() > TEMP_THRESHOLD)
+		digitalWrite(LED_PIN, HIGH);
+	else
+		digitalWrite(LED_PIN, LOW);
+}
+
+void draw_screen() //skriver resultatet til skjermen
+{
+	lcd.clear();
+	float temp = get_deg_c();
+	float fahrenheit = (temp * (9/5)) + 32;
+	
+	if(millis() < BUTTON_TIMER + 750)
+	{
+		lcd.setCursor(0,1);
+		lcd.print(TEMP_THRESHOLD);
+
+	}
+	else
+	{
+		lcd.setCursor(0,0);
+		lcd.print("C");
+		lcd.print(temp);
+		lcd.setCursor(0,1);
+		lcd.print("F");
+		lcd.print(fahrenheit);
+	}
+}
+
+void handle_button()
+{
+	if (BUTTON_TIMER < millis() && read_button(UP_PIN))
+	{
+		BUTTON_TIMER = BUTONN_TIMEOUT + millis();
+		TEMP_THRESHOLD += TEMP_STEP;
+		
+	}
+	if (BUTTON_TIMER < millis() && read_button(DOWN_PIN))
+	{
+		BUTTON_TIMER = BUTONN_TIMEOUT + millis();
+		TEMP_THRESHOLD -= TEMP_STEP;		
+	}		
+ }
+
+
+float get_deg_c()
+{
+	return (((analogRead(TEMP_PIN) * 0.004882814) - 0.5) *100);
+}
+
+bool read_button(int button)
+{
+	return digitalRead(button);
+}
